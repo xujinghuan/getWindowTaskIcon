@@ -1,37 +1,32 @@
 package getWindowTask;
 
-import com.sun.jna.Native;
+import java.util.HashSet;
+import java.util.Set;
+
 import com.sun.jna.Pointer;
 import com.sun.jna.platform.win32.User32;
 import com.sun.jna.platform.win32.WinDef.HWND;
-import com.sun.jna.win32.StdCallLibrary;
+import com.sun.jna.ptr.IntByReference;
 
 /**
- * 枚举窗口
+ * 枚举窗口（获得已经window打开窗口的PID）
  * @author 徐经欢
  *
  */
 public class EnumWindow {
-	public interface User32 extends StdCallLibrary {
-		User32 INSTANCE = (User32) Native.loadLibrary("user32", User32.class);
-
-		interface WNDENUMPROC extends StdCallCallback {
-			boolean callback(Pointer hWnd, Pointer arg);
-		}
-
-		boolean EnumWindows(WNDENUMPROC lpEnumFunc, Pointer arg);
-	}
-
-	public static void main(String[] args) {
+	public static Set<Integer> getTaskPID() {
 		User32 user32 = User32.INSTANCE;
-
+		Set<Integer> set=new HashSet<Integer>();
+		IntByReference i=new IntByReference();//放PID
 		user32.EnumWindows(new User32.WNDENUMPROC() {
-			int count;
-			public boolean callback(Pointer hWnd, Pointer userData) {
-				
-				System.out.println("Found window " + hWnd + ", total " + ++count);
+			public boolean callback(HWND h, Pointer p) {
+				user32.GetWindowThreadProcessId(h, i);//获取窗口的PID
+				if(user32.IsWindow(h)&&user32.IsWindowEnabled(h)&&user32.IsWindowVisible(h)){
+					set.add(i.getValue());
+				}
 				return true;
 			}
 		}, null);
+		return set;
 	}
 }
